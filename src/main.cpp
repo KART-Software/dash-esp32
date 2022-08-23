@@ -31,6 +31,8 @@
 
 CAN_device_t CAN_cfg;
 CanReceiver canReceiver = CanReceiver(&CAN_cfg);
+uint8_t dataLength;
+char *data;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
@@ -61,6 +63,8 @@ void setup()
   // Serial.begin(115200);
 
   canReceiver.initialize();
+  dataLength = canReceiver.getDataLength();
+  data = new char[dataLength + 4];
 
   // Create the BLE Device
   BLEDevice::init(DEVICE_NAME);
@@ -98,24 +102,17 @@ void setup()
 
 void loop()
 {
-
-  uint8_t data[9];
-  canReceiver.receive(data);
-  char sendData[12];
+  canReceiver.receive(data, 4);
   int ms = millis();
   for (int i = 0; i < 4; i++)
   {
-    sendData[i] = (ms >> (8 * (3 - i))) & 0xFF;
+    data[i] = (ms >> (8 * (3 - i))) & 0xFF;
   }
-  // sendData[0] = ms >> 24;
-  // sendData[1] = (ms >> 16) & 0xFF;
-  // sendData[2] = (ms >> 8) & 0xFF;
-  // sendData[3] = ms & 0xFF;
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < dataLength; i++)
   {
-    sendData[i + 4] = data[i + 1];
+    data[i + 4] = data[i];
   }
-  std::string str_data = std::string(sendData, sizeof(sendData) / sizeof(sendData[0]));
+  std::string str_data = std::string(data, sizeof(data) / sizeof(data[0]));
 
   // notify changed value
   if (deviceConnected)
