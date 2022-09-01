@@ -7,6 +7,7 @@ StateIndicator::StateIndicator(uint8_t ledPin) : ledPin(ledPin)
 void StateIndicator::initialize()
 {
     pinMode(ledPin, OUTPUT);
+    setStateNoConnection();
 }
 
 void StateIndicator::setStateNoConnection()
