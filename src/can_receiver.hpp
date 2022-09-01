@@ -18,7 +18,7 @@ private:
     ESP32CAN *can;
     CAN_device_t *device;
     uint8_t dataLength;
-    uint8_t canIdEnd;
+    uint16_t canIdEnd;
     void detectDataLength();
     void setFilter();
 };

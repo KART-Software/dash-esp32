@@ -1,8 +1,8 @@
 #ifndef _CONSTANT_H_
 #define _CONSTANT_H_
 
-#define TX_PIN 16
-#define RX_PIN 17
+#define TX_PIN GPIO_NUM_17
+#define RX_PIN GPIO_NUM_16
 
 #define CAN_LED_PIN 0
 #define BLUETOOTH_LED_PIN 1

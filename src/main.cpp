@@ -27,7 +27,6 @@
 #include <BLE2902.h>
 
 #include "can_receiver.hpp"
-#include <CAN_config.h>
 
 CAN_device_t CAN_cfg;
 CanReceiver canReceiver = CanReceiver(&CAN_cfg);
@@ -41,10 +40,6 @@ bool oldDeviceConnected = false;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
-
-#define SERVICE_UUID "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-#define CHARACTERISTIC_UUID "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define DEVICE_NAME "KART_DASH_ESP32"
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
@@ -60,7 +55,7 @@ class MyServerCallbacks : public BLEServerCallbacks
 
 void setup()
 {
-  // Serial.begin(115200);
+  Serial.begin(115200);
 
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
@@ -97,7 +92,7 @@ void setup()
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0); // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
-  // Serial.println("Waiting a client connection to notify...");
+  Serial.println("Waiting a client connection to notify...");
 }
 
 void loop()
@@ -108,11 +103,13 @@ void loop()
   {
     data[i] = (ms >> (8 * (3 - i))) & 0xFF;
   }
-  for (int i = 0; i < dataLength; i++)
+  for (int i = 0; i < dataLength + 4; i++)
   {
-    data[i + 4] = data[i];
+    printf("%02X ", data[i]);
   }
-  std::string str_data = std::string(data, sizeof(data) / sizeof(data[0]));
+  printf("\n");
+
+  std::string str_data = std::string(data, dataLength + 4);
 
   // notify changed value
   if (deviceConnected)
@@ -126,7 +123,7 @@ void loop()
   {
     delay(500);                  // give the bluetooth stack the chance to get things ready
     pServer->startAdvertising(); // restart advertising
-    // Serial.println("start advertising");
+    Serial.println("start advertising");
     oldDeviceConnected = deviceConnected;
   }
   // connecting

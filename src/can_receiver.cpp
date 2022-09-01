@@ -5,8 +5,8 @@ CanReceiver::CanReceiver(CAN_device_t *device, ESP32CAN *can) : device(device), 
 void CanReceiver::initialize()
 {
     device->speed = CAN_SPEED_500KBPS;
-    device->tx_pin_id = GPIO_NUM_16;
-    device->rx_pin_id = GPIO_NUM_17;
+    device->tx_pin_id = TX_PIN;
+    device->rx_pin_id = RX_PIN;
     device->rx_queue = xQueueCreate(10, sizeof(CAN_frame_t));
     setFilter();
     can->CANInit();
@@ -15,9 +15,8 @@ void CanReceiver::initialize()
 
 bool CanReceiver::receive(char *data, uint8_t startIndex)
 {
-    // これで動いてくれたらうれしい
-    // 動いたとしてもだいぶ遅いかも
-    for (uint8_t id = CAN_ID_START; id <= canIdEnd; id++)
+    // TODOリファクタ（？）
+    for (uint16_t id = CAN_ID_START; id <= canIdEnd; id++)
     {
         CAN_frame_t rx_frame;
         for (int _ = 0; _ < 10; _++)
@@ -29,23 +28,26 @@ bool CanReceiver::receive(char *data, uint8_t startIndex)
                     break;
                 }
             }
+            else
+            {
+                return false;
+            }
         }
         for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
         {
             data[startIndex + (id - CAN_ID_START) * 8 + i] = rx_frame.data.u8[i];
         }
-        return true;
     }
-    return false;
+    return true;
 }
 
 void CanReceiver::detectDataLength()
 {
-    // これで動いてくれたらうれしい
+    // TODOリファクタ（？）
     CAN_frame_t rx_frame;
     canIdEnd = CAN_ID_START;
     dataLength = 0;
-    for (int _ = 0; _ < 30; _++)
+    for (int _ = 0; _ < 100; _++)
     {
         if (xQueueReceive(device->rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
         {
@@ -82,15 +84,23 @@ void CanReceiver::setFilter()
     CAN_filter_t filter;
 
     filter.FM = Single_Mode;
-    // ↓これあってるかわからない
-    filter.ACR0 = CAN_ID_START >> 4;
-    filter.ACR1 = (CAN_ID_START & 0x0F) << 4;
+    // メモ
+    // CAN ID は11ビットであることに注意。
+    //   ID 0b abcd efgh ijkl
+    // MASK 0b mnop qrst uvwx
+    //         ↑           ↑
+    //      ここから     ここまで が使うビット
+    // これを踏まえて、AN97076のマニュアルを見てばかやまじ
+
+    // この場合CAN_ID_START(0x5F0)に対して0x5F□が許される。
+    filter.ACR0 = (CAN_ID_START >> 3) & 0xFF;
+    filter.ACR1 = (CAN_ID_START & 0b111) << 5;
     filter.ACR2 = 0x00;
     filter.ACR3 = 0x00;
 
-    filter.AMR0 = 0x00;
+    filter.AMR0 = 0b00000001;
     filter.AMR1 = 0xFF;
     filter.AMR2 = 0xFF;
     filter.AMR3 = 0xFF;
-    ESP32Can.CANConfigFilter(&filter);
+    can->CANConfigFilter(&filter);
 }
