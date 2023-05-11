@@ -10,7 +10,9 @@ void CanReceiver::initialize()
     device->rx_queue = xQueueCreate(10, sizeof(CAN_frame_t));
     setFilter();
     can->CANInit();
-    detectDataLength();
+    // detectDataLength();
+    dataLength = CAN_DATA_LENGTH;
+    canIdEnd = CAN_ID_END;
 }
 
 bool CanReceiver::receive(char *data, uint8_t startIndex)

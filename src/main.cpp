@@ -117,11 +117,11 @@ void loop()
   {
     data[i] = (ms >> (8 * (3 - i))) & 0xFF;
   }
-  for (int i = 0; i < dataLength + 4; i++)
-  {
-    printf("%02X ", data[i]);
-  }
-  printf("\n");
+  // for (int i = 0; i < dataLength + 4; i++)
+  // {
+  //   printf("%02X ", data[i]);
+  // }
+  // printf("\n");
 
   std::string str_data = std::string(data, dataLength + 4);
 
