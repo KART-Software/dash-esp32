@@ -63,6 +63,10 @@ void setup()
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
   data = new char[dataLength + 4];
+  for (int i = 0; i < dataLength + 4; i++)
+  {
+    data[i] = 0;
+  }
   if (dataLength > 0)
   {
     canIndicator.setStateConnected();

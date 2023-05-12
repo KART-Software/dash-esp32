@@ -11,6 +11,8 @@ class CanReceiver
 public:
     CanReceiver(CAN_device_t *device, ESP32CAN *can = &ESP32Can);
     bool receive(char *data, uint8_t startIndex);
+    bool receive1(char *data, uint8_t startIndex);
+    bool receive2(char *data, uint8_t startIndex);
     void initialize();
     uint8_t getDataLength();
 
