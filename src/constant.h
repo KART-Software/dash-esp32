@@ -5,7 +5,7 @@
 #define RX_PIN GPIO_NUM_16
 
 #define CAN_LED_PIN 12
-#define BLUETOOTH_LED_PIN 1
+#define BLUETOOTH_LED_PIN 13
 
 #define CAN_ID_START_1 0x5F0
 #define CAN_ID_END_1 0x5F1

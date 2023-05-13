@@ -37,6 +37,7 @@ TaskHandle_t canReceiveTask;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
+// StateIndicator bleIndicator = StateIndicator(BLUETOOTH_LED_PIN);
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -45,13 +46,22 @@ bool oldDeviceConnected = false;
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
+  StateIndicator bleIndicator;
+
+public:
+  MyServerCallbacks() : bleIndicator(StateIndicator(BLUETOOTH_LED_PIN))
+  {
+    bleIndicator.initialize();
+  }
   void onConnect(BLEServer *pServer)
   {
     deviceConnected = true;
+    bleIndicator.setStateConnected();
   };
   void onDisconnect(BLEServer *pServer)
   {
     deviceConnected = false;
+    bleIndicator.setStateNoConnection();
   }
 };
 
@@ -122,7 +132,7 @@ void loop()
   {
     pCharacteristic->setValue(str_data);
     pCharacteristic->notify();
-    delay(20); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
+    delay(1000 / BLUETOOTH_SEND_FREQUENCY); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }
   // disconnecting
   if (!deviceConnected && oldDeviceConnected)
@@ -138,5 +148,4 @@ void loop()
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
   }
-  delay(1000 / BLUETOOTH_SEND_FREQUENCY);
 }
