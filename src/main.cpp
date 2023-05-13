@@ -27,14 +27,10 @@
 #include <BLE2902.h>
 
 #include "can_receiver.hpp"
-#include "status.hpp"
 
-CAN_device_t CAN_cfg;
-CanReceiver canReceiver = CanReceiver(&CAN_cfg);
+CanReceiver canReceiver = CanReceiver();
 uint8_t dataLength;
 char *data;
-
-StateIndicator canIndicator(CAN_LED_PIN);
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
@@ -59,17 +55,12 @@ class MyServerCallbacks : public BLEServerCallbacks
 void setup()
 {
   Serial.begin(115200);
-  canIndicator.initialize();
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
   data = new char[dataLength + 4];
   for (int i = 0; i < dataLength + 4; i++)
   {
     data[i] = 0;
-  }
-  if (dataLength > 0)
-  {
-    canIndicator.setStateConnected();
   }
 
   // Create the BLE Device
@@ -108,14 +99,6 @@ void setup()
 
 void loop()
 {
-  if (canReceiver.receive(data, 4))
-  {
-    canIndicator.setStateConnected();
-  }
-  else
-  {
-    canIndicator.setStateNoConnection();
-  }
   int ms = millis();
   for (int i = 0; i < 4; i++)
   {

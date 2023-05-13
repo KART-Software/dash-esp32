@@ -5,18 +5,19 @@
 #include <CAN_config.h>
 #include <Arduino.h>
 #include "constant.h"
+#include "status.hpp"
 
 class CanReceiver
 {
 public:
-    CanReceiver(CAN_device_t *device, ESP32CAN *can = &ESP32Can);
+    CanReceiver();
     bool receive(char *data, uint8_t startIndex);
-    bool receive1(char *data, uint8_t startIndex);
-    bool receive2(char *data, uint8_t startIndex);
     void initialize();
     uint8_t getDataLength();
+    void start(char *data, uint8_t startIndex);
 
 private:
+    StateIndicator canIndicator;
     ESP32CAN *can;
     CAN_device_t *device;
     uint8_t dataLength;

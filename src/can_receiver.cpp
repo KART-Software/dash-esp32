@@ -1,6 +1,9 @@
 #include "can_receiver.hpp"
 
-CanReceiver::CanReceiver(CAN_device_t *device, ESP32CAN *can) : device(device), can(can) {}
+CanReceiver::CanReceiver() : can(&ESP32Can), canIndicator(StateIndicator(CAN_LED_PIN))
+{
+    canIndicator.initialize();
+}
 
 void CanReceiver::initialize()
 {
@@ -16,66 +19,28 @@ void CanReceiver::initialize()
 
 bool CanReceiver::receive(char *data, uint8_t startIndex)
 {
-    // return receive1(data, startIndex) && receive2(data, startIndex + CAN_DATA_LENGTH_1);
-    return receive2(data, startIndex + CAN_DATA_LENGTH_1);
-}
-
-bool CanReceiver::receive1(char *data, uint8_t startIndex)
-{
-    // TODOリファクタ（？）
-    for (uint32_t id = CAN_ID_START_1; id <= CAN_ID_END_1; id++)
+    CAN_frame_t rx_frame;
+    if (xQueueReceive(device->rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
     {
-        CAN_frame_t rx_frame;
-        for (int count = 0; count < 10; count++)
+        if (CAN_ID_START_1 <= rx_frame.MsgID <= CAN_ID_END_1)
         {
-            if (xQueueReceive(device->rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
+            for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
             {
-                if (rx_frame.MsgID == id)
-                {
-                    for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
-                    {
-                        data[startIndex + (id - CAN_ID_START_1) * 8 + i] = rx_frame.data.u8[i];
-                    }
-                    break;
-                }
-            }
-            if (count >= 9)
-            {
-                Serial.print(id);
-                return false;
+                data[startIndex + (rx_frame.MsgID - CAN_ID_START_1) * 8 + i] = rx_frame.data.u8[i];
             }
         }
-    }
-    return true;
-}
-
-bool CanReceiver::receive2(char *data, uint8_t startIndex)
-{
-    // TODOリファクタ（？）
-    for (uint32_t id = CAN_ID_START_2; id <= CAN_ID_END_2; id++)
-    {
-        CAN_frame_t rx_frame;
-        for (int count = 0; count < 10; count++)
+        else if (CAN_ID_START_2 <= rx_frame.MsgID <= CAN_ID_END_2)
         {
-            if (xQueueReceive(device->rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
+            for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
             {
-                if (rx_frame.MsgID == id)
-                {
-                    for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
-                    {
-                        data[startIndex + (id - CAN_ID_START_2) * 8 + i] = rx_frame.data.u8[i];
-                    }
-                    break;
-                }
-            }
-            if (count >= 9)
-            {
-                Serial.print(id);
-                return false;
+                data[startIndex + CAN_DATA_LENGTH_1 + (rx_frame.MsgID - CAN_ID_START_2) * 8 + i] = rx_frame.data.u8[i];
             }
         }
+        return true;
+        canIndicator.setStateConnected();
     }
-    return true;
+    canIndicator.setStateNoConnection();
+    return false;
 }
 
 void CanReceiver::detectDataLength()
@@ -136,4 +101,12 @@ void CanReceiver::setFilter()
     filter.AMR2 = 0b00000001;
     filter.AMR3 = 0b11111111;
     can->CANConfigFilter(&filter);
+}
+
+void CanReceiver::start(char *data, uint8_t startIndex)
+{
+    while (true)
+    {
+        receive(data, startIndex);
+    }
 }
