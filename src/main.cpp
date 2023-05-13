@@ -28,9 +28,12 @@
 
 #include "can_receiver.hpp"
 
-CanReceiver canReceiver = CanReceiver();
+// CAN_device_t CAN_cfg はここでやらないと何故かエラーが出ます。（グローバルにしないといけないのかも）
+CAN_device_t CAN_cfg;
+CanReceiver canReceiver = CanReceiver(&CAN_cfg);
 uint8_t dataLength;
 char *data;
+TaskHandle_t canReceiveTask;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
@@ -62,6 +65,8 @@ void setup()
   {
     data[i] = 0;
   }
+  canReceiver.setListToWrite(data, 4);
+  xTaskCreatePinnedToCore(startCanReceiver, "CanReceiveTask", 8192, (void *)&canReceiver, 1, &canReceiveTask, 1);
 
   // Create the BLE Device
   BLEDevice::init(DEVICE_NAME);
@@ -104,11 +109,11 @@ void loop()
   {
     data[i] = (ms >> (8 * (3 - i))) & 0xFF;
   }
-  // for (int i = 0; i < dataLength + 4; i++)
-  // {
-  //   printf("%02X ", data[i]);
-  // }
-  // printf("\n");
+  for (int i = 0; i < dataLength + 4; i++)
+  {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
 
   std::string str_data = std::string(data, dataLength + 4);
 
@@ -133,4 +138,5 @@ void loop()
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
   }
+  delay(1000 / BLUETOOTH_SEND_FREQUENCY);
 }

@@ -13,7 +13,7 @@ class StateIndicator
 {
 public:
     StateIndicator(uint8_t ledPin);
-    void initialize();
+    void initialize(); // この関数はsetup関数内で実行されるようにしてください。LEDが光りません。
     void setStateNoConnection();
     void setStateConnected();
     CommunicationState getState();

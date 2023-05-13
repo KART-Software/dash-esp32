@@ -10,11 +10,12 @@
 class CanReceiver
 {
 public:
-    CanReceiver();
-    bool receive(char *data, uint8_t startIndex);
+    CanReceiver(CAN_device_t *device);
+    bool receive();
     void initialize();
+    void setListToWrite(char *data, uint8_t startIndex);
     uint8_t getDataLength();
-    void start(char *data, uint8_t startIndex);
+    void start();
 
 private:
     StateIndicator canIndicator;
@@ -22,8 +23,12 @@ private:
     CAN_device_t *device;
     uint8_t dataLength;
     uint16_t canIdEnd;
+    char *data;
+    uint8_t dataStartIndex;
     void detectDataLength();
     void setFilter();
 };
+
+void startCanReceiver(void *data);
 
 #endif

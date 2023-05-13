@@ -1,12 +1,12 @@
 #include "can_receiver.hpp"
 
-CanReceiver::CanReceiver() : can(&ESP32Can), canIndicator(StateIndicator(CAN_LED_PIN))
+CanReceiver::CanReceiver(CAN_device_t *device) : can(&ESP32Can), device(device), canIndicator(StateIndicator(CAN_LED_PIN))
 {
-    canIndicator.initialize();
 }
 
 void CanReceiver::initialize()
 {
+    canIndicator.initialize();
     device->speed = CAN_SPEED_500KBPS;
     device->tx_pin_id = TX_PIN;
     device->rx_pin_id = RX_PIN;
@@ -17,27 +17,27 @@ void CanReceiver::initialize()
     dataLength = CAN_DATA_LENGTH_1 + CAN_DATA_LENGTH_2;
 }
 
-bool CanReceiver::receive(char *data, uint8_t startIndex)
+bool CanReceiver::receive()
 {
     CAN_frame_t rx_frame;
     if (xQueueReceive(device->rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
     {
-        if (CAN_ID_START_1 <= rx_frame.MsgID <= CAN_ID_END_1)
+        if (CAN_ID_START_1 <= rx_frame.MsgID && rx_frame.MsgID <= CAN_ID_END_1)
         {
             for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
             {
-                data[startIndex + (rx_frame.MsgID - CAN_ID_START_1) * 8 + i] = rx_frame.data.u8[i];
+                data[dataStartIndex + (rx_frame.MsgID - CAN_ID_START_1) * 8 + i] = rx_frame.data.u8[i];
             }
         }
-        else if (CAN_ID_START_2 <= rx_frame.MsgID <= CAN_ID_END_2)
+        else if (CAN_ID_START_2 <= rx_frame.MsgID && rx_frame.MsgID <= CAN_ID_END_2)
         {
             for (int i = 0; i < rx_frame.FIR.B.DLC; i++)
             {
-                data[startIndex + CAN_DATA_LENGTH_1 + (rx_frame.MsgID - CAN_ID_START_2) * 8 + i] = rx_frame.data.u8[i];
+                data[dataStartIndex + CAN_DATA_LENGTH_1 + (rx_frame.MsgID - CAN_ID_START_2) * 8 + i] = rx_frame.data.u8[i];
             }
         }
-        return true;
         canIndicator.setStateConnected();
+        return true;
     }
     canIndicator.setStateNoConnection();
     return false;
@@ -103,10 +103,23 @@ void CanReceiver::setFilter()
     can->CANConfigFilter(&filter);
 }
 
-void CanReceiver::start(char *data, uint8_t startIndex)
+void CanReceiver::start()
 {
     while (true)
     {
-        receive(data, startIndex);
+        receive();
     }
+}
+
+void CanReceiver::setListToWrite(char *data, uint8_t startIndex)
+{
+    this->data = data;
+    dataStartIndex = startIndex;
+}
+
+void startCanReceiver(void *canReceiver)
+{
+    CanReceiver *receiver;
+    receiver = (CanReceiver *)canReceiver;
+    receiver->start();
 }
