@@ -27,17 +27,17 @@
 #include <BLE2902.h>
 
 #include "can_receiver.hpp"
-#include "status.hpp"
 
+// CAN_device_t CAN_cfg はここでやらないと何故かエラーが出ます。（グローバルにしないといけないのかも）
 CAN_device_t CAN_cfg;
 CanReceiver canReceiver = CanReceiver(&CAN_cfg);
 uint8_t dataLength;
 char *data;
-
-StateIndicator canIndicator(CAN_LED_PIN);
+TaskHandle_t canReceiveTask;
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
+// StateIndicator bleIndicator = StateIndicator(BLUETOOTH_LED_PIN);
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -46,20 +46,28 @@ bool oldDeviceConnected = false;
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
+  StateIndicator bleIndicator;
+
+public:
+  MyServerCallbacks() : bleIndicator(StateIndicator(BLUETOOTH_LED_PIN))
+  {
+    bleIndicator.initialize();
+  }
   void onConnect(BLEServer *pServer)
   {
     deviceConnected = true;
+    bleIndicator.setStateConnected();
   };
   void onDisconnect(BLEServer *pServer)
   {
     deviceConnected = false;
+    bleIndicator.setStateNoConnection();
   }
 };
 
 void setup()
 {
   Serial.begin(115200);
-  canIndicator.initialize();
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
   data = new char[dataLength + 4];
@@ -67,10 +75,8 @@ void setup()
   {
     data[i] = 0;
   }
-  if (dataLength > 0)
-  {
-    canIndicator.setStateConnected();
-  }
+  canReceiver.setListToWrite(data, 4);
+  xTaskCreatePinnedToCore(startCanReceiver, "CanReceiveTask", 8192, (void *)&canReceiver, 1, &canReceiveTask, 1);
 
   // Create the BLE Device
   BLEDevice::init(DEVICE_NAME);
@@ -108,24 +114,16 @@ void setup()
 
 void loop()
 {
-  if (canReceiver.receive(data, 4))
-  {
-    canIndicator.setStateConnected();
-  }
-  else
-  {
-    canIndicator.setStateNoConnection();
-  }
   int ms = millis();
   for (int i = 0; i < 4; i++)
   {
     data[i] = (ms >> (8 * (3 - i))) & 0xFF;
   }
-  // for (int i = 0; i < dataLength + 4; i++)
-  // {
-  //   printf("%02X ", data[i]);
-  // }
-  // printf("\n");
+  for (int i = 0; i < dataLength + 4; i++)
+  {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
 
   std::string str_data = std::string(data, dataLength + 4);
 
@@ -134,7 +132,7 @@ void loop()
   {
     pCharacteristic->setValue(str_data);
     pCharacteristic->notify();
-    delay(20); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
+    delay(1000 / BLUETOOTH_SEND_FREQUENCY); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
   }
   // disconnecting
   if (!deviceConnected && oldDeviceConnected)
