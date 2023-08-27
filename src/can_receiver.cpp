@@ -1,6 +1,6 @@
 #include "can_receiver.hpp"
 
-CanReceiver::CanReceiver(CAN_device_t *device) : can(&ESP32Can), device(device), canIndicator(StateIndicator(CAN_LED_PIN))
+CanReceiver::CanReceiver(CAN_device_t *device) : device(device)
 {
 }
 

@@ -18,8 +18,8 @@ public:
     void start();
 
 private:
-    StateIndicator canIndicator;
-    ESP32CAN *can;
+    StateIndicator canIndicator = StateIndicator(CAN_LED_PIN);
+    ESP32CAN *can = &ESP32Can;
     CAN_device_t *device;
     uint8_t dataLength;
     uint16_t canIdEnd;
