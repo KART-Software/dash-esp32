@@ -126,12 +126,12 @@ void setup()
   Serial.begin(115200);
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
-  data = new char[dataLength + 4];
-  for (int i = 0; i < dataLength + 4; i++)
+  data = new char[dataLength ];
+  for (int i = 0; i < dataLength; i++)
   {
     data[i] = 0;
   }
-  canReceiver.setListToWrite(data, 4);
+  canReceiver.setListToWrite(data, 0);
   xTaskCreatePinnedToCore(startCanReceiver, "CanReceiveTask", 8192, (void *)&canReceiver, 1, &canReceiveTask, 1);
 
   WiFi.config(ip, gateway, subnet); //static_ip
@@ -178,18 +178,18 @@ void loop()
   Serial.println(dataLength);
   
   doc["millis"] = ms;
-  doc["rpm"] = fromBytesToInt16(data, dataLength, 0, 2);
-  doc["throttlePosition"] = fromBytesToInt16(data, dataLength, 2, 2)/10;
-  doc["engineTemp"] = fromBytesToInt16(data, dataLength, 4, 2)/10;
-  doc["oilTemp"] = fromBytesToInt16(data, dataLength, 6, 2)/10;
-  doc["oilPressure"] = fromBytesToInt16(data, dataLength, 8, 2);
-  doc["gearVoltage"] = fromBytesToInt16(data, dataLength, 10, 2)/1000;
+  doc["rpm"] = fromBytesToInt16Reverse(data, dataLength, 0, 2);
+  doc["throttlePosition"] = fromBytesToInt16Reverse(data, dataLength, 2, 2)/10.0;
+  doc["engineTemp"] = fromBytesToInt16Reverse(data, dataLength, 4, 2)/10.0;
+  doc["oilTemp"] = fromBytesToInt16Reverse(data, dataLength, 6, 2)/10.0;
+  doc["oilPressure"] = fromBytesToInt16Reverse(data, dataLength, 8, 2);
+  doc["gearVoltage"] = fromBytesToInt16Reverse(data, dataLength, 10, 2)/1000.0;
 
-  doc["latitude"] = fromBytesToInt32Reverse(data, dataLength, 24, 4);
-  doc["longitude"] = fromBytesToInt32Reverse(data, dataLength, 28, 4);
-  doc["altitude"] = fromBytesToInt32Reverse(data, dataLength, 32, 4);
-  doc["gpsSpeed2D"] = fromBytesToInt32Reverse(data, dataLength, 38, 3);
-  doc["gpsSpeed3D"] = fromBytesToInt32Reverse(data, dataLength, 41, 3);
+  doc["latitude"] = fromBytesToInt32(data, dataLength, 24, 4);
+  doc["longitude"] = fromBytesToInt32(data, dataLength, 28, 4);
+  doc["altitude"] = fromBytesToInt32(data, dataLength, 32, 4);
+  doc["gpsSpeed2D"] = fromBytesToInt32(data, dataLength, 38, 3);
+  doc["gpsSpeed3D"] = fromBytesToInt32(data, dataLength, 41, 3);
   sendDataWs();
   delay(100);
 }
