@@ -40,7 +40,6 @@ void onEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     //client connected
     WsConnectionIndicator.setStateConnected();
     printf("ws[%s][%u] connect\n", server->url(), client->id());
-    client->printf("Hello Client %u :)", client->id());
     client->ping();
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
@@ -138,11 +137,17 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.println("Connecting to ws...");
+  int wifiReconnectionCount = 0;
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
+    delay(50);
     if (WiFi.status() == WL_CONNECT_FAILED) {
+      if (wifiReconnectionCount > 5) {
+        wifiReconnectionCount = 0;
+        ESP.restart();
+      }
       Serial.println("Can't connect");
-      ESP.restart();
+      //ESP.restart();
+      wifiReconnectionCount++;
       }
     }
   Serial.println("Connected");
