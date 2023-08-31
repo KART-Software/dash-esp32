@@ -114,7 +114,7 @@ void setup()
 
 void loop()
 {
-  int ms = millis();
+  int ms = 0;
   for (int i = 0; i < 4; i++)
   {
     data[i] = (ms >> (8 * (3 - i))) & 0xFF;
