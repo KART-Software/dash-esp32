@@ -33,6 +33,7 @@ CAN_device_t CAN_cfg;
 CanReceiver canReceiver = CanReceiver(&CAN_cfg);
 uint8_t dataLength;
 char *data;
+char *sendData;
 TaskHandle_t canReceiveTask;
 
 BLEServer *pServer = NULL;
@@ -70,12 +71,13 @@ void setup()
   Serial.begin(115200);
   canReceiver.initialize();
   dataLength = canReceiver.getDataLength();
-  data = new char[dataLength + 4];
-  for (int i = 0; i < dataLength + 4; i++)
+  data = new char[dataLength];
+  sendData = new char[20];
+  for (int i = 0; i < dataLength; i++)
   {
     data[i] = 0;
   }
-  canReceiver.setListToWrite(data, 4);
+  canReceiver.setListToWrite(data, 0);
   xTaskCreatePinnedToCore(startCanReceiver, "CanReceiveTask", 8192, (void *)&canReceiver, 1, &canReceiveTask, 1);
 
   // Create the BLE Device
@@ -114,18 +116,32 @@ void setup()
 
 void loop()
 {
-  int ms = millis();
-  for (int i = 0; i < 4; i++)
+  // int ms = millis();
+  // for (int i = 0; i < 4; i++)
+  // {
+  //   data[i] = (ms >> (8 * (3 - i))) & 0xFF;
+  // }
+  // for (int i = 0; i < dataLength + 4; i++)
+  // {
+  //   printf("%02X ", data[i]);
+  // }
+  // printf("\n");
+
+  for (int i = 0; i < 12; i++)
   {
-    data[i] = (ms >> (8 * (3 - i))) & 0xFF;
+    sendData[i] = data[i];
   }
-  for (int i = 0; i < dataLength + 4; i++)
+  for (int i = 12; i < 20; i++)
   {
-    printf("%02X ", data[i]);
+    sendData[i] = data[i + 12];
+  }
+
+  for (int i = 0; i < 20; i++)
+  {
+    printf("%02X ", sendData[i]);
   }
   printf("\n");
-
-  std::string str_data = std::string(data, dataLength + 4);
+  std::string str_data = std::string(sendData, 20);
 
   // notify changed value
   if (deviceConnected)
