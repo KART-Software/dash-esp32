@@ -13,7 +13,7 @@
 #include "can_receiver.hpp"
 #include "converters.hpp"
 
-IPAddress ip(192,168,4,6); //ip
+IPAddress ip(192,168,33,6); //ip
 IPAddress gateway(192,168, 11, 1);
 IPAddress subnet(255, 255, 255, 0);
 
